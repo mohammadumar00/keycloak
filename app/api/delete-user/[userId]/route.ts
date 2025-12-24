@@ -19,7 +19,7 @@ export async function DELETE(
 
   try {
     const deleteUserResponse = await fetch(
-      `http://localhost:8080/admin/realms/test-realm/users/${userId}`,
+      `http://localhost:9090/admin/realms/bhs-realm/users/${userId}`,
       {
         method: "DELETE",
         headers: {

@@ -20,7 +20,7 @@ export async function GET(
 
   try {
     const getUserResponse = await fetch(
-      `http://localhost:8080/admin/realms/test-realm/users/${userId}`,
+      `http://localhost:9090/admin/realms/bhs-realm/users/${userId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

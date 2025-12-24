@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const keycloakUrl =
-    "http://localhost:8080/realms/test-realm/protocol/openid-connect/token";
+    "http://localhost:9090/realms/bhs-realm/protocol/openid-connect/token";
   const clientId = process.env.KEYCLOAK_ADMIN_CLIENT_ID!;
   const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET!;
 

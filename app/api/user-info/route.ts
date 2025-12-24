@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     // Use Keycloak's userinfo endpoint to get user profile
     const response = await fetch(
-      "http://localhost:8080/realms/test-realm/protocol/openid-connect/userinfo",
+      "http://localhost:9090/realms/bhs-realm/protocol/openid-connect/userinfo",
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

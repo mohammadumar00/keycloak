@@ -2,17 +2,16 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const { username, password } = await request.json();
-
   const params = new URLSearchParams();
   params.append("grant_type", "password");
-  params.append("client_id", "nextjs-client"); // your client id
+  params.append("client_id", "bhs-client"); // your client id
   params.append("client_secret", process.env.KEYCLOAK_CLIENT_SECRET);
   params.append("username", username);
   params.append("password", password);
   params.append("scope", "openid profile email");
 
   const response = await fetch(
-    "http://localhost:8080/realms/test-realm/protocol/openid-connect/token",
+    "http://localhost:9090/realms/bhs-realm/protocol/openid-connect/token",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     );
   }
   const kcRes = await fetch(
-    "http://localhost:8080/admin/realms/test-realm/users",
+    "http://localhost:9090/admin/realms/bhs-realm/users",
     {
       method: "GET",
       headers: {

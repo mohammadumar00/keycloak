@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   console.log("Access Token:", accessToken);
   const userBody = await req.json();
   const kcRes = await fetch(
-    "http://localhost:8080/admin/realms/test-realm/users",
+    "http://localhost:9090/admin/realms/bhs-realm/users",
     {
       method: "POST",
       headers: {

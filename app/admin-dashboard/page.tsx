@@ -28,9 +28,6 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 
-// Adjust to your roles
-const AVAILABLE_ROLES = ["bhs-admin", "bhs-operator", "bhs-viewer"];
-
 type User = {
   id: string;
   username: string;
@@ -39,9 +36,10 @@ type User = {
   email?: string;
   enabled?: boolean;
   attributes?: { avatarUrl?: string[] };
-  // You can attach roles after fetching via a separate API if needed
-  realmRoles?: string[];
+  clientRoles?: { [clientId: string]: string[] }; // { "bhs-client": ["role1","role2"] }
 };
+
+const CLIENT_ID = "bhs-client";
 
 const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -51,14 +49,17 @@ const AdminDashboard: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // dynamically loaded client roles from /api/roles
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+
   // Local editable state for drawer
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editEnabled, setEditEnabled] = useState(true);
-  const [editRoles, setEditRoles] = useState<string[]>([]);
+  const [editRoles, setEditRoles] = useState<string[]>([]); // roles for bhs-client
 
-  // Load users on mount
+  // Load users on mount (now with clientRoles from backend)
   useEffect(() => {
     async function fetchUsers() {
       try {
@@ -71,7 +72,6 @@ const AdminDashboard: React.FC = () => {
           return;
         }
         const data = await res.json();
-        // data is array from Keycloak; you may enrich with roles here if you have a roles API
         setUsers(data);
         setLoading(false);
       } catch (e) {
@@ -83,13 +83,34 @@ const AdminDashboard: React.FC = () => {
     fetchUsers();
   }, []);
 
+  // Load available client roles on mount
+  useEffect(() => {
+    async function fetchRoles() {
+      try {
+        const res = await fetch("/api/client-roles");
+        if (!res.ok) {
+          console.error("Failed to load roles");
+          return;
+        }
+        // expected: { clientId: "bhs-client", roles: ["sessions-dashboard-access", ...] }
+        const data = await res.json();
+        setAvailableRoles(data.roles || []);
+      } catch (e) {
+        console.error("Failed to load roles", e);
+      }
+    }
+
+    fetchRoles();
+  }, []);
+
   function openEditDrawer(user: User) {
     setSelectedUser(user);
     setEditFirstName(user.firstName || "");
     setEditLastName(user.lastName || "");
     setEditEmail(user.email || "");
     setEditEnabled(user.enabled ?? true);
-    setEditRoles(user.realmRoles || []); // if you load roles separately
+    // pre‑select whatever roles this user already has for bhs-client
+    setEditRoles(user.clientRoles?.[CLIENT_ID] || []);
     setDrawerOpen(true);
   }
 
@@ -116,12 +137,12 @@ const AdminDashboard: React.FC = () => {
           lastName: editLastName,
           email: editEmail,
           enabled: editEnabled,
-          // keep attributes if you want; here we just pass avatarUrl through if present
           attributes: selectedUser.attributes,
         },
-        realmRoles: editRoles,
-        // if you want client roles later:
-        // clientRoles: { "bhs-client": ["bhs-dashboard"] }
+        // send updated client roles for bhs-client
+        clientRoles: {
+          [CLIENT_ID]: editRoles,
+        },
       };
 
       const res = await fetch(`/api//update-user/${selectedUser.id}`, {
@@ -137,7 +158,7 @@ const AdminDashboard: React.FC = () => {
         return;
       }
 
-      // Update local list for optimistic UI
+      // update local state so table shows new roles
       setUsers((prev) =>
         prev.map((u) =>
           u.id === selectedUser.id
@@ -147,7 +168,10 @@ const AdminDashboard: React.FC = () => {
                 lastName: editLastName,
                 email: editEmail,
                 enabled: editEnabled,
-                realmRoles: editRoles,
+                clientRoles: {
+                  ...(u.clientRoles || {}),
+                  [CLIENT_ID]: editRoles,
+                },
               }
             : u
         )
@@ -193,7 +217,7 @@ const AdminDashboard: React.FC = () => {
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Username</TableCell>
-                <TableCell>Roles</TableCell>
+                <TableCell>Roles ({CLIENT_ID})</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -204,6 +228,7 @@ const AdminDashboard: React.FC = () => {
                 const fullName =
                   (user.firstName || "") +
                   (user.lastName ? ` ${user.lastName}` : "");
+                const userClientRoles = user.clientRoles?.[CLIENT_ID] || [];
 
                 return (
                   <TableRow key={user.id} hover>
@@ -216,9 +241,9 @@ const AdminDashboard: React.FC = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.username}</TableCell>
                     <TableCell>
-                      {user.realmRoles && user.realmRoles.length > 0 ? (
+                      {userClientRoles.length > 0 ? (
                         <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                          {user.realmRoles.map((role) => (
+                          {userClientRoles.map((role) => (
                             <Chip key={role} label={role} size="small" />
                           ))}
                         </Stack>
@@ -294,10 +319,10 @@ const AdminDashboard: React.FC = () => {
             />
 
             <Typography variant="subtitle1" mt={1}>
-              Roles
+              Roles ({CLIENT_ID})
             </Typography>
             <FormGroup>
-              {AVAILABLE_ROLES.map((role) => (
+              {availableRoles.map((role) => (
                 <FormControlLabel
                   key={role}
                   control={
